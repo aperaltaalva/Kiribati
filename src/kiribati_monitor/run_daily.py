@@ -176,8 +176,12 @@ def main(argv: list[str] | None = None) -> int:
                 markdown_path=md_path,
                 html_path=email_html_path,
             )
+            if require_email_delivery() and not email_sent:
+                raise RuntimeError("Email delivery is required but no email was sent. Check EMAIL_TO, EMAIL_FROM, and SMTP_* secrets.")
         else:
             print(f"Email skipped. Brief generated at {md_path} and {html_path}.")
+            if require_email_delivery():
+                raise RuntimeError("Email delivery is required but --no-email was used.")
 
         site_index_path = publish_site_if_requested(args.publish_site, output_dir)
 
@@ -258,6 +262,10 @@ def publish_site_if_requested(publish_site: bool, output_dir: Path) -> Path | No
     site_index_path = publish_static_site(output_dir=output_dir, site_dir=os.getenv("SITE_DIR", "site"))
     LOGGER.info("Static site generated at %s", site_index_path)
     return site_index_path
+
+
+def require_email_delivery() -> bool:
+    return os.getenv("REQUIRE_EMAIL", "").strip().lower() in {"1", "true", "yes", "on"}
 
 
 def configure_logging() -> None:

@@ -23,6 +23,7 @@ jobs:
       LOG_LEVEL: INFO
       HTTP_MAX_ATTEMPTS: 3
       HTTP_BACKOFF_SECONDS: 1.0
+      REQUIRE_EMAIL: "true"
 
     steps:
       - name: Check out repository
