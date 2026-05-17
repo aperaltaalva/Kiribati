@@ -1,6 +1,6 @@
 # Kiribati Macro Monitor
 
-`kiribati-macro-monitor` is a daily public-source monitoring agent for Kiribati, designed for an IMF mission-chief workflow. It fetches official, multilateral, donor, regional, media, and data updates; deduplicates them in SQLite; classifies macro relevance with the OpenAI Responses API; and writes concise Markdown and HTML daily briefs with source links.
+`kiribati-macro-monitor` is a daily public-source monitoring agent for Kiribati, designed for an IMF mission-chief workflow. It fetches official, multilateral, donor, regional, media, and data updates; deduplicates them in SQLite; classifies macro relevance with the OpenAI Responses API; and writes concise Markdown/HTML briefs plus a GitHub Pages website.
 
 ## Quick Start
 
@@ -26,13 +26,13 @@ Run the monitor:
 python -m kiribati_monitor.run_daily --since-hours 36
 ```
 
-Dry run without email and without persistent storage:
+Dry run without persistent storage:
 
 ```bash
 python -m kiribati_monitor.run_daily --dry-run --max-items 10
 ```
 
-Generated briefs are written to `output/daily_brief_YYYY-MM-DD.md`, `output/daily_brief_YYYY-MM-DD.html`, and `output/daily_email_YYYY-MM-DD.html`.
+Generated briefs are written to `output/daily_brief_YYYY-MM-DD.md`, `output/daily_brief_YYYY-MM-DD.html`, and `output/daily_email_YYYY-MM-DD.html`. The scheduled GitHub workflow also publishes a short static site.
 
 ## Configuration
 
@@ -68,7 +68,7 @@ EMAIL_FROM=
 EMAIL_TO=person@example.org,team@example.org
 ```
 
-If SMTP variables are missing, the app skips email and prints the generated brief paths.
+Email is optional and disabled in the default GitHub workflow. If SMTP variables are missing, the app skips email and prints the generated brief paths.
 
 ## How This Looks in Practice
 
@@ -77,10 +77,11 @@ For normal use, you do not need to run commands every morning.
 - GitHub stores the code in a private repository.
 - GitHub Actions runs the code automatically every weekday morning.
 - The app checks the public sources, classifies new items, and creates the daily brief.
-- You receive an HTML email brief that is designed to read cleanly on a phone.
+- The latest brief is published to the repository's GitHub Pages website.
 - The same output is saved in GitHub Actions as an artifact, so you can download the Markdown, web HTML, and email HTML later.
 - The source health report shows which sources were checked, which failed, and which produced new items.
-- The optional static website is disabled by default. Use it only for public-source-only material unless your organization has approved access controls.
+- The scheduled workflow filters to dated items from the last 24 hours, so old static pages do not appear as daily news.
+- The website is only for public-source-only material unless your organization has approved access controls.
 
 ## Sources
 
@@ -107,13 +108,13 @@ The fetcher is intentionally fault-tolerant: one failing source logs a warning a
 Daily production run:
 
 ```bash
-python -m kiribati_monitor.run_daily --since-hours 36
+python -m kiribati_monitor.run_daily --since-hours 24 --fresh-hours 24 --no-email --publish-site
 ```
 
 Pre-flight check:
 
 - Confirm `.env` has `OPENAI_API_KEY`, `MODEL`, `DB_PATH`, and `OUTPUT_DIR`.
-- Keep SMTP variables empty when you want file output only; set `EMAIL_TO` when the brief should be mailed.
+- Email is optional. The default GitHub workflow uses the website and artifacts instead.
 - Run `python -m pytest` after source, prompt, or code changes.
 - Use `python -m kiribati_monitor.run_daily --dry-run --max-items 10` to test fetching and brief rendering without SQLite persistence, OpenAI API calls, or email.
 - Use `python -m kiribati_monitor.run_daily --publish-site` only when you want to generate a local `site/` folder for public-source-only publishing.
@@ -140,10 +141,10 @@ Daily checks for a mission workflow:
 - Treat media-only items as leads unless confirmed by official, statistical, donor, or multilateral sources.
 - Do not add confidential IMF material to prompts, sources, SQLite storage, GitHub Actions logs, or generated briefs unless deployed in an approved environment.
 
-Optional static website:
+Static website:
 
 ```bash
-python -m kiribati_monitor.run_daily --since-hours 36 --publish-site
+python -m kiribati_monitor.run_daily --since-hours 24 --fresh-hours 24 --no-email --publish-site
 ```
 
 This writes `site/index.html` and one HTML page per generated daily brief. The command only creates files; it does not enable GitHub Pages or publish anything by itself.
@@ -163,21 +164,17 @@ Tests cover source-registry validation, classification-schema validation, URL de
 The workflow in `.github/workflows/daily.yml` supports manual runs and a weekday scheduled run. It installs dependencies, runs tests, runs:
 
 ```bash
-python -m kiribati_monitor.run_daily --since-hours 36
+python -m kiribati_monitor.run_daily --since-hours 24 --fresh-hours 24 --no-email --publish-site
 ```
 
-and uploads the full `output/` folder as an artifact.
+It uploads the full `output/` folder as an artifact and deploys `site/` to GitHub Pages.
 
 Set repository secrets under **Settings > Secrets and variables > Actions**:
 
 - `OPENAI_API_KEY`
 - `MODEL` optional
-- `SMTP_HOST` optional
-- `SMTP_PORT` optional
-- `SMTP_USER` optional
-- `SMTP_PASSWORD` optional
-- `EMAIL_FROM` optional
-- `EMAIL_TO` optional
+
+SMTP/email secrets are optional and are not used by the default scheduled workflow.
 
 Keep the repository private by default. Do not put secrets in `.env`, source files, workflow files, prompts, or `sources.yaml`. Use GitHub Actions secrets for credentials.
 

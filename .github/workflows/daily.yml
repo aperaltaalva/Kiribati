@@ -19,18 +19,12 @@ jobs:
     env:
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
       MODEL: ${{ secrets.MODEL || 'gpt-5.4-mini' }}
-      SMTP_HOST: ${{ secrets.SMTP_HOST }}
-      SMTP_PORT: ${{ secrets.SMTP_PORT }}
-      SMTP_USER: ${{ secrets.SMTP_USER }}
-      SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
-      EMAIL_FROM: ${{ secrets.EMAIL_FROM }}
-      EMAIL_TO: ${{ secrets.EMAIL_TO }}
       DB_PATH: data/kiribati_monitor.sqlite
       OUTPUT_DIR: output
       LOG_LEVEL: INFO
       HTTP_MAX_ATTEMPTS: 3
       HTTP_BACKOFF_SECONDS: 1.0
-      REQUIRE_EMAIL: "true"
+      REQUIRE_EMAIL: "false"
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
       SITE_DIR: site
 
@@ -50,7 +44,7 @@ jobs:
         run: python -m pytest
 
       - name: Run daily monitor and build site
-        run: python -m kiribati_monitor.run_daily --since-hours 36 --publish-site
+        run: python -m kiribati_monitor.run_daily --since-hours 24 --fresh-hours 24 --no-email --publish-site
 
       - name: List generated output
         if: always()

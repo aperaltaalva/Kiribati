@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from kiribati_monitor import run_daily
-from kiribati_monitor.models import Article, Source
+from kiribati_monitor.models import Article, Source, StoredArticle
 
 
 def sample_article() -> Article:
@@ -138,3 +138,73 @@ def test_require_email_fails_when_email_is_not_configured(monkeypatch, tmp_path)
     monkeypatch.setattr(run_daily, "finish_daily_run", lambda *args, **kwargs: None)
 
     assert run_daily.main(["--max-items", "1"]) == 1
+
+
+def test_filter_fresh_articles_excludes_old_and_undated_items() -> None:
+    fresh = sample_article().model_copy(
+        update={
+            "title": "Fresh update",
+            "url": "https://www.mfed.gov.ki/news/fresh",
+            "published_date": datetime.now(timezone.utc) - timedelta(hours=2),
+        }
+    )
+    old = sample_article().model_copy(
+        update={
+            "title": "Old update",
+            "url": "https://www.mfed.gov.ki/news/old",
+            "published_date": datetime.now(timezone.utc) - timedelta(days=3),
+        }
+    )
+    undated = sample_article().model_copy(
+        update={
+            "title": "Undated update",
+            "url": "https://www.mfed.gov.ki/news/undated",
+            "published_date": None,
+        }
+    )
+    source_log = [
+        {
+            "name": "Ministry of Finance and Economic Development",
+            "url": "https://www.mfed.gov.ki/",
+            "source_type": "official",
+            "fetch_method": "html",
+            "status": "ok",
+            "count": 3,
+            "error": None,
+        }
+    ]
+
+    filtered, updated_log = run_daily.filter_fresh_articles(
+        [fresh, old, undated],
+        source_log,
+        fresh_hours=24,
+    )
+
+    assert filtered == [fresh]
+    assert updated_log[0]["raw_count"] == 3
+    assert updated_log[0]["count"] == 1
+    assert updated_log[0]["excluded_old_or_undated_count"] == 2
+
+
+def test_filter_fresh_stored_articles_excludes_old_and_undated_items() -> None:
+    fresh = StoredArticle(
+        id=1,
+        article=sample_article().model_copy(
+            update={"published_date": datetime.now(timezone.utc) - timedelta(hours=1)}
+        ),
+        classification=None,
+    )
+    old = StoredArticle(
+        id=2,
+        article=sample_article().model_copy(
+            update={"published_date": datetime.now(timezone.utc) - timedelta(days=2)}
+        ),
+        classification=None,
+    )
+    undated = StoredArticle(
+        id=3,
+        article=sample_article().model_copy(update={"published_date": None}),
+        classification=None,
+    )
+
+    assert run_daily.filter_fresh_stored_articles([fresh, old, undated], fresh_hours=24) == [fresh]

@@ -37,6 +37,12 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--no-email", action="store_true", help="Skip email even if SMTP is configured.")
     parser.add_argument("--max-items", type=int, default=None, help="Maximum number of fetched/classified items for this run.")
     parser.add_argument("--publish-site", action="store_true", help="Generate a static public-source-only site in site/. Disabled by default.")
+    parser.add_argument(
+        "--fresh-hours",
+        type=int,
+        default=None,
+        help="Only brief articles with a published date in the last N hours. Undated articles are excluded.",
+    )
     return parser.parse_args(argv)
 
 
@@ -72,6 +78,11 @@ def main(argv: list[str] | None = None) -> int:
         backoff_seconds=backoff_seconds,
     )
     LOGGER.info("Fetch complete: fetched_articles=%s", len(articles))
+    articles, source_log = filter_fresh_articles(
+        articles,
+        source_log,
+        fresh_hours=args.fresh_hours,
+    )
 
     output_dir = Path(os.getenv("OUTPUT_DIR", "output"))
 
@@ -160,6 +171,7 @@ def main(argv: list[str] | None = None) -> int:
             since_hours=args.since_hours,
             max_items=args.max_items,
         )
+        recent = filter_fresh_stored_articles(recent, fresh_hours=args.fresh_hours)
         md_path, html_path = generate_daily_brief(recent, output_dir=output_dir, source_log=source_log)
         email_html_path = generate_email_brief(recent, output_dir=output_dir, source_log=source_log)
         LOGGER.info(
@@ -265,6 +277,67 @@ def build_dry_run_records(articles: list) -> list[StoredArticle]:
             )
         )
     return records
+
+
+def filter_fresh_articles(
+    articles: list,
+    source_log: list[dict],
+    *,
+    fresh_hours: int | None,
+) -> tuple[list, list[dict]]:
+    if fresh_hours is None:
+        return articles, source_log
+
+    cutoff = time.time() - max(1, fresh_hours) * 3600
+    filtered = []
+    kept_by_source: dict[str, int] = {}
+    excluded_by_source: dict[str, int] = {}
+
+    for article in articles:
+        if article.published_date and article.published_date.timestamp() >= cutoff:
+            filtered.append(article)
+            kept_by_source[article.source_name] = kept_by_source.get(article.source_name, 0) + 1
+        else:
+            excluded_by_source[article.source_name] = excluded_by_source.get(article.source_name, 0) + 1
+
+    updated_log = []
+    for entry in source_log:
+        updated = dict(entry)
+        source_name = str(updated.get("name"))
+        updated["raw_count"] = int(updated.get("count") or 0)
+        updated["count"] = kept_by_source.get(source_name, 0)
+        updated["excluded_old_or_undated_count"] = excluded_by_source.get(source_name, 0)
+        updated_log.append(updated)
+
+    LOGGER.info(
+        "Freshness filter applied: fresh_hours=%s kept=%s excluded_old_or_undated=%s",
+        fresh_hours,
+        len(filtered),
+        len(articles) - len(filtered),
+    )
+    return filtered, updated_log
+
+
+def filter_fresh_stored_articles(
+    articles: list[StoredArticle],
+    *,
+    fresh_hours: int | None,
+) -> list[StoredArticle]:
+    if fresh_hours is None:
+        return articles
+    cutoff = time.time() - max(1, fresh_hours) * 3600
+    filtered = [
+        item
+        for item in articles
+        if item.article.published_date and item.article.published_date.timestamp() >= cutoff
+    ]
+    LOGGER.info(
+        "Stored-article freshness filter applied: fresh_hours=%s kept=%s excluded_old_or_undated=%s",
+        fresh_hours,
+        len(filtered),
+        len(articles) - len(filtered),
+    )
+    return filtered
 
 
 def publish_site_if_requested(publish_site: bool, output_dir: Path) -> Path | None:
