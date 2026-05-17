@@ -1,0 +1,44 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "kiribati-macro-monitor"
+version = "0.1.0"
+description = "Daily macro and policy monitoring agent for Kiribati."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [{ name = "Kiribati Macro Monitor Maintainers" }]
+dependencies = [
+  "beautifulsoup4>=4.12.0",
+  "feedparser>=6.0.11",
+  "jinja2>=3.1.0",
+  "markdown>=3.6",
+  "openai>=1.93.0",
+  "pydantic>=2.7.0",
+  "python-dotenv>=1.0.1",
+  "pyyaml>=6.0.1",
+  "requests>=2.32.0"
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.2.0"
+]
+
+[project.scripts]
+kiribati-monitor = "kiribati_monitor.run_daily:main"
+
+[tool.setuptools]
+package-dir = { "" = "src" }
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+kiribati_monitor = ["templates/*.j2"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]

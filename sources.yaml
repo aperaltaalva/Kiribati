@@ -1,0 +1,151 @@
+- name: Office of Te Beretitenti / Kiribati President
+  url: https://www.president.gov.ki/
+  source_type: official
+  fetch_method: html
+  tags: [government, presidency, cabinet, policy]
+  importance: 5
+  enabled: true
+
+- name: Ministry of Finance and Economic Development
+  url: https://www.mfed.gov.ki/
+  source_type: official
+  fetch_method: html
+  tags: [fiscal, budget, macro, development]
+  importance: 5
+  enabled: true
+
+- name: Kiribati National Statistics Office
+  url: https://nso.gov.ki/
+  source_type: statistics
+  fetch_method: html
+  tags: [statistics, inflation, population, data]
+  importance: 5
+  enabled: true
+
+- name: Ministry of Fisheries and Marine Resources
+  url: https://www.mfor.gov.ki/
+  source_type: official
+  fetch_method: html
+  tags: [fisheries, tuna, licensing, external_sector]
+  importance: 5
+  enabled: true
+
+- name: IMF Kiribati Country Page
+  url: https://www.imf.org/en/Countries/KIR
+  source_type: multilateral
+  fetch_method: html
+  tags: [imf, article_iv, macro, debt, fiscal]
+  importance: 5
+  enabled: true
+
+- name: World Bank Kiribati
+  url: https://www.worldbank.org/en/country/pacificislands
+  source_type: multilateral
+  fetch_method: html
+  tags: [world_bank, projects, donor, development]
+  importance: 4
+  enabled: true
+
+- name: ADB Kiribati
+  url: https://data.adb.org/dashboard/kiribati-numbers
+  source_type: multilateral
+  fetch_method: html
+  tags: [adb, projects, donor, infrastructure]
+  importance: 4
+  enabled: true
+
+- name: Australia DFAT Kiribati
+  url: https://www.dfat.gov.au/geo/kiribati
+  source_type: donor
+  fetch_method: html
+  tags: [australia, donor, aid, infrastructure]
+  importance: 4
+  enabled: true
+
+- name: New Zealand MFAT Kiribati
+  url: https://www.mfat.govt.nz/en/countries-and-regions/australia-and-pacific/kiribati
+  source_type: donor
+  fetch_method: html
+  tags: [new_zealand, donor, aid, development]
+  importance: 4
+  enabled: true
+
+- name: Pacific Islands Forum
+  url: https://forumsec.org/
+  source_type: regional
+  fetch_method: html
+  tags: [regional, pacific_forum, geopolitics, climate]
+  importance: 3
+  enabled: true
+
+- name: Forum Fisheries Agency
+  url: https://www.ffa.int/news/
+  source_type: regional
+  fetch_method: html
+  tags: [fisheries, regional, tuna, surveillance]
+  importance: 4
+  enabled: true
+
+- name: WCPFC
+  url: https://www.wcpfc.int/news
+  source_type: regional
+  fetch_method: html
+  tags: [fisheries, tuna, wcpfc, external_sector]
+  importance: 4
+  enabled: true
+
+- name: Parties to the Nauru Agreement
+  url: https://www.pnatuna.com/news
+  source_type: regional
+  fetch_method: html
+  tags: [fisheries, pna, vessel_days, tuna]
+  importance: 4
+  enabled: true
+
+- name: SPREP
+  url: https://www.sprep.org/news
+  source_type: regional
+  fetch_method: html
+  tags: [climate, environment, resilience, disaster]
+  importance: 3
+  enabled: true
+
+- name: ReliefWeb Kiribati
+  url: https://reliefweb.int/country/kir/rss.xml
+  source_type: donor
+  fetch_method: rss
+  tags: [disaster, humanitarian, climate, reliefweb]
+  importance: 4
+  enabled: true
+
+- name: RNZ Pacific
+  url: https://www.rnz.co.nz/rss/pacific.xml
+  source_type: media
+  fetch_method: rss
+  tags: [media, pacific, politics, regional]
+  importance: 3
+  enabled: true
+
+- name: Islands Business
+  url: https://islandsbusiness.com/feed/
+  source_type: media
+  fetch_method: rss
+  tags: [media, pacific, business, regional]
+  importance: 3
+  enabled: true
+
+- name: Pacific Island Times
+  url: https://www.pacificislandtimes.com/
+  source_type: media
+  fetch_method: html
+  tags: [media, pacific, regional]
+  importance: 2
+  enabled: true
+
+- name: Reuters/GDELT Kiribati Query
+  url: https://api.gdeltproject.org/api/v2/doc/doc?query=Kiribati%20OR%20I-Kiribati%20OR%20Tarawa&mode=ArtList&maxrecords=50&format=json&sort=datedesc
+  source_type: media
+  fetch_method: gdelt
+  tags: [gdelt, reuters_watch, media, kiribati]
+  importance: 3
+  enabled: true

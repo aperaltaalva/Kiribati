@@ -1,0 +1,95 @@
+# {{ display_title }}
+
+_{{ confidence_caveats_line }}_
+
+{% macro item_line(item) -%}
+**[{{ item.article.title }}]({{ item.article.url }})** ({{ item.article.source_name }}{% if item.article.published_date %}, {{ item.article.published_date.date().isoformat() }}{% endif %}) - {{ item.classification.one_sentence_summary }} _Why it matters:_ {{ item.classification.why_it_matters }}
+{%- endmacro %}
+
+## A. Top signals
+
+{% if top_signals %}
+{% for item in top_signals %}
+- {{ item_line(item) }}
+{% endfor %}
+{% else %}
+No major macro-relevant updates found.
+{% endif %}
+
+## B. Fiscal and macro
+
+{% if sections["Fiscal and macro"] %}
+{% for item in sections["Fiscal and macro"][:6] %}
+- {{ item_line(item) }}
+{% endfor %}
+{% else %}
+No material fiscal or macro updates identified.
+{% endif %}
+
+## C. Fisheries and external sector
+
+{% if sections["Fisheries and external sector"] %}
+{% for item in sections["Fisheries and external sector"][:6] %}
+- {{ item_line(item) }}
+{% endfor %}
+{% else %}
+No material fisheries or external-sector updates identified.
+{% endif %}
+
+## D. Climate/disaster and infrastructure
+
+{% if sections["Climate/disaster and infrastructure"] %}
+{% for item in sections["Climate/disaster and infrastructure"][:6] %}
+- {{ item_line(item) }}
+{% endfor %}
+{% else %}
+No material climate, disaster, or infrastructure updates identified.
+{% endif %}
+
+## E. Donor/project pipeline
+
+{% if sections["Donor/project pipeline"] %}
+{% for item in sections["Donor/project pipeline"][:6] %}
+- {{ item_line(item) }}
+{% endfor %}
+{% else %}
+No material donor or project-pipeline updates identified.
+{% endif %}
+
+## F. Politics/governance/geopolitics
+
+{% if sections["Politics/governance/geopolitics"] %}
+{% for item in sections["Politics/governance/geopolitics"][:6] %}
+- {{ item_line(item) }}
+{% endfor %}
+{% else %}
+No material politics, governance, or geopolitics updates identified.
+{% endif %}
+
+## G. Data watch
+
+{% if sections["Data watch"] %}
+{% for item in sections["Data watch"][:6] %}
+- {{ item_line(item) }}
+{% endfor %}
+{% else %}
+No new data releases identified.
+{% endif %}
+
+## H. Items requiring follow-up
+
+{% if follow_ups %}
+{% for item in follow_ups %}
+- **[{{ item.article.title }}]({{ item.article.url }})** - {{ item.classification.suggested_follow_up }}
+{% endfor %}
+{% else %}
+No specific follow-up items flagged.
+{% endif %}
+
+## I. Source health report
+
+| Source | Type | Method | Health | Fetched | New | Detail |
+|---|---:|---:|---:|---:|---:|---|
+{% for source in source_log %}
+| [{{ source.name }}]({{ source.url }}) | {{ source.source_type }} | {{ source.fetch_method }} | {{ source.health_label | default(source.status) }} | {{ source.count }} | {% if source.new_count is defined and source.new_count is not none %}{{ source.new_count }}{% else %}n/a{% endif %} | {{ source.status }}{% if source.error %}: {{ source.error[:110] }}{% endif %}{% if source.attempt_count %}; attempts={{ source.attempt_count }}{% endif %}{% if source.elapsed_seconds %}; {{ "%.1f"|format(source.elapsed_seconds) }}s{% endif %} |
+{% endfor %}

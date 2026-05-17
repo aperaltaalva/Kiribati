@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ title }}</title>
+  <style>
+    body { margin: 0; padding: 0; background: #f3f6f8; color: #1f2933; font-family: Arial, Helvetica, sans-serif; }
+    .wrapper { width: 100%; background: #f3f6f8; padding: 16px 0; }
+    .container { width: 100%; max-width: 680px; margin: 0 auto; background: #ffffff; }
+    .header { padding: 20px 18px 12px; border-bottom: 1px solid #d9e2ec; }
+    .content { padding: 0 18px 18px; }
+    h1 { font-size: 22px; line-height: 1.25; margin: 0 0 8px; color: #102a43; }
+    h2 { font-size: 17px; line-height: 1.3; margin: 22px 0 10px; color: #102a43; }
+    p { font-size: 15px; line-height: 1.48; margin: 8px 0; }
+    a { color: #0b5cad; text-decoration: underline; }
+    .muted { color: #52606d; font-size: 13px; line-height: 1.45; }
+    .item { border-top: 1px solid #e4e7eb; padding: 12px 0; }
+    .item-title { font-weight: bold; font-size: 16px; line-height: 1.35; margin: 0 0 5px; }
+    .meta { color: #52606d; font-size: 12px; line-height: 1.4; margin: 0 0 6px; }
+    .why { color: #334e68; font-size: 14px; line-height: 1.45; margin: 6px 0 0; }
+    .notice { background: #f0f4f8; border-left: 4px solid #829ab1; padding: 10px 12px; margin: 14px 0; }
+    .health { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 8px; }
+    .health th, .health td { border-bottom: 1px solid #e4e7eb; padding: 7px 4px; text-align: left; vertical-align: top; }
+    .health th { color: #334e68; font-weight: bold; }
+    .footer { padding: 14px 18px 20px; border-top: 1px solid #d9e2ec; }
+    @media only screen and (max-width: 480px) {
+      .wrapper { padding: 0; }
+      .container { width: 100% !important; }
+      .header, .content, .footer { padding-left: 14px !important; padding-right: 14px !important; }
+      h1 { font-size: 20px !important; }
+      h2 { font-size: 16px !important; }
+      p { font-size: 15px !important; }
+      .item-title { font-size: 15px !important; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrapper">
+    <div class="container">
+      <div class="header">
+        <h1>{{ display_title }}</h1>
+        <p class="muted">{{ confidence_caveats_line }}</p>
+      </div>
+      <div class="content">
+        <h2>Top signals</h2>
+        {% if top_signals %}
+          {% for item in top_signals[:5] %}
+          <div class="item">
+            <p class="item-title"><a href="{{ item.article.url }}">{{ item.article.title }}</a></p>
+            <p class="meta">{{ item.article.source_name }}{% if item.article.published_date %} · {{ item.article.published_date.date().isoformat() }}{% endif %} · relevance {{ item.classification.macro_relevance }}/3 · urgency {{ item.classification.urgency }}/3</p>
+            <p>{{ item.classification.one_sentence_summary }}</p>
+            <p class="why"><strong>Why it matters:</strong> {{ item.classification.why_it_matters }}</p>
+          </div>
+          {% endfor %}
+        {% else %}
+          <div class="notice">
+            <p><strong>No major macro-relevant updates found.</strong></p>
+            <p>The monitor still checked the enabled public sources and generated the source health summary below.</p>
+          </div>
+        {% endif %}
+
+        {% if follow_ups %}
+        <h2>Follow-up</h2>
+          {% for item in follow_ups[:5] %}
+          <div class="item">
+            <p class="item-title"><a href="{{ item.article.url }}">{{ item.article.title }}</a></p>
+            <p>{{ item.classification.suggested_follow_up }}</p>
+          </div>
+          {% endfor %}
+        {% endif %}
+
+        <h2>Source health summary</h2>
+        <p class="muted">Checked {{ source_health_summary.total }} sources: {{ source_health_summary.succeeded }} succeeded, {{ source_health_summary.failed }} failed, {{ source_health_summary.no_new_items }} returned no new items, {{ source_health_summary.skipped }} skipped. New items: {{ source_health_summary.new }}.</p>
+        <table class="health" role="presentation">
+          <thead>
+            <tr>
+              <th>Source</th>
+              <th>Health</th>
+              <th>New</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for source in source_log %}
+            <tr>
+              <td><a href="{{ source.url }}">{{ source.name }}</a></td>
+              <td>{{ source.health_label | default(source.status) }}{% if source.error %}: {{ source.error[:80] }}{% endif %}</td>
+              <td>{% if source.new_count is defined and source.new_count is not none %}{{ source.new_count }}{% else %}n/a{% endif %}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <div class="footer">
+        <p class="muted">Public-source-only monitor. Open source links before using items for mission decisions.</p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
