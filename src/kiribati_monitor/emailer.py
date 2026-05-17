@@ -4,6 +4,7 @@ import logging
 import os
 import smtplib
 from email.message import EmailMessage
+from email.utils import formatdate, make_msgid
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -35,27 +36,38 @@ def send_brief_email(
     message["Subject"] = subject
     message["From"] = config["from"]
     message["To"] = ", ".join(config["to"])
+    message["Date"] = formatdate(localtime=False, usegmt=True)
+    message["Message-ID"] = make_msgid(domain="kiribati-macro-monitor.local")
     message.set_content(markdown_text)
     message.add_alternative(html_text, subtype="html")
     LOGGER.info(
-        "Email configuration detected: smtp_host=%s smtp_port=%s recipients=%s smtp_auth=%s",
+        "Email configuration detected: smtp_host=%s smtp_port=%s recipients=%s masked_to=%s smtp_auth=%s",
         config["host"],
         config["port"],
         len(config["to"]),
+        ", ".join(mask_email(str(email)) for email in config["to"]),
         "yes" if config.get("user") and config.get("password") else "no",
     )
 
     if config["port"] == 465:
         with smtplib.SMTP_SSL(config["host"], config["port"], timeout=30) as smtp:
             login_if_configured(smtp, config)
-            smtp.send_message(message)
+            refused = smtp.send_message(message)
     else:
         with smtplib.SMTP(config["host"], config["port"], timeout=30) as smtp:
             smtp.starttls()
             login_if_configured(smtp, config)
-            smtp.send_message(message)
+            refused = smtp.send_message(message)
 
-    LOGGER.info("Sent daily brief email to %s", ", ".join(config["to"]))
+    if refused:
+        refused_recipients = ", ".join(mask_email(str(email)) for email in refused)
+        raise RuntimeError(f"SMTP refused recipients: {refused_recipients}")
+
+    LOGGER.info(
+        "SMTP accepted daily brief email: message_id=%s masked_to=%s",
+        message["Message-ID"],
+        ", ".join(mask_email(str(email)) for email in config["to"]),
+    )
     return True
 
 
@@ -90,3 +102,12 @@ def login_if_configured(smtp: smtplib.SMTP, config: dict[str, object]) -> None:
     password = config.get("password")
     if user and password:
         smtp.login(str(user), str(password))
+
+
+def mask_email(email: str) -> str:
+    if "@" not in email:
+        return "***"
+    local, domain = email.split("@", 1)
+    if not local:
+        return f"***@{domain}"
+    return f"{local[0]}***@{domain}"
