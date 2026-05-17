@@ -69,13 +69,16 @@ jobs:
           if-no-files-found: error
 
       - name: Configure GitHub Pages
+        if: ${{ always() && hashFiles('site/index.html') != '' }}
         uses: actions/configure-pages@v5
 
       - name: Upload GitHub Pages artifact
+        if: ${{ always() && hashFiles('site/index.html') != '' }}
         uses: actions/upload-pages-artifact@v3
         with:
           path: site/
 
       - name: Deploy to GitHub Pages
+        if: ${{ always() && hashFiles('site/index.html') != '' }}
         id: deployment
         uses: actions/deploy-pages@v4

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 import logging
 import os
 import sys
@@ -170,20 +171,31 @@ def main(argv: list[str] | None = None) -> int:
         )
 
         email_sent = False
+        email_error = None
         if not args.no_email:
-            email_sent = send_brief_email(
-                subject=f"Kiribati Daily Macro and Policy Monitor - {md_path.stem[-10:]}",
-                markdown_path=md_path,
-                html_path=email_html_path,
-            )
-            if require_email_delivery() and not email_sent:
-                raise RuntimeError("Email delivery is required but no email was sent. Check EMAIL_TO, EMAIL_FROM, and SMTP_* secrets.")
+            try:
+                email_sent = send_brief_email(
+                    subject=f"Kiribati Daily Macro and Policy Monitor - {md_path.stem[-10:]}",
+                    markdown_path=md_path,
+                    html_path=email_html_path,
+                )
+            except Exception as exc:
+                LOGGER.exception("Email delivery failed")
+                email_error = str(exc)
+                email_sent = False
         else:
             print(f"Email skipped. Brief generated at {md_path} and {html_path}.")
             if require_email_delivery():
-                raise RuntimeError("Email delivery is required but --no-email was used.")
+                email_error = "Email delivery is required but --no-email was used."
 
         site_index_path = publish_site_if_requested(args.publish_site, output_dir)
+        write_email_status(output_dir, email_sent=email_sent, email_error=email_error)
+
+        if require_email_delivery() and not email_sent:
+            raise RuntimeError(
+                email_error
+                or "Email delivery is required but no email was sent. Check EMAIL_TO, EMAIL_FROM, and SMTP_* secrets."
+            )
 
         finish_daily_run(
             connection,
@@ -262,6 +274,24 @@ def publish_site_if_requested(publish_site: bool, output_dir: Path) -> Path | No
     site_index_path = publish_static_site(output_dir=output_dir, site_dir=os.getenv("SITE_DIR", "site"))
     LOGGER.info("Static site generated at %s", site_index_path)
     return site_index_path
+
+
+def write_email_status(output_dir: Path, *, email_sent: bool, email_error: str | None) -> None:
+    output_dir.mkdir(parents=True, exist_ok=True)
+    status_path = output_dir / "email_status.json"
+    status_path.write_text(
+        json.dumps(
+            {
+                "email_sent": email_sent,
+                "email_error": email_error,
+            },
+            indent=2,
+            sort_keys=True,
+        ),
+        encoding="utf-8",
+    )
+    if email_error:
+        (output_dir / "email_failed.txt").write_text(email_error, encoding="utf-8")
 
 
 def require_email_delivery() -> bool:
