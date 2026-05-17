@@ -24,6 +24,7 @@ jobs:
       HTTP_MAX_ATTEMPTS: 3
       HTTP_BACKOFF_SECONDS: 1.0
       REQUIRE_EMAIL: "true"
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
 
     steps:
       - name: Check out repository
