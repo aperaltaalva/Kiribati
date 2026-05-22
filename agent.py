@@ -67,8 +67,8 @@ def generate_html_page(tasks_text):
     - Organize the tasks clearly by country or topic (e.g., Fiji, Tuvalu, Vanuatu, Regional Climate Financing, Geopolitics).
     - For each item, display:
       1. The original task/headline.
-      2. A "Why it matters" analytical brief.
-      3. "Actionable Next Steps" (concrete search strategies, specific agency resources to watch, or drafts of tracking items).
+      2. A "Why it matters" analytical brief explaining regional impacts or policy implications.
+      3. "Actionable Next Steps" (concrete search strategies, specific agency resources to watch, or suggested follow-up tasks).
     - Return ONLY the raw HTML code, starting with <!DOCTYPE html> and ending with </html>. Do not wrap the code in markdown formatting like ```html.
     """
     
@@ -103,7 +103,5 @@ if __name__ == "__main__":
             print("Successfully created 'site/followups.html'.")
         else:
             print("Failed to generate HTML.")
-    else:
-        print("No tasks found or failed to parse.")
     else:
         print("No tasks found or failed to parse.")
