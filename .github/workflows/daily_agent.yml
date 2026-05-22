@@ -44,7 +44,7 @@ jobs:
         env:
           FOLLOWUPS_SOURCE_PATH: site/index.html
           FOLLOWUPS_OUTPUT_PATH: site/followups.html
-          FOLLOWUPS_MODEL: ${{ secrets.FOLLOWUPS_MODEL || 'gpt-5.5' }}
+          FOLLOWUPS_MODEL: ${{ secrets.FOLLOWUPS_MODEL || 'gpt-5.4' }}
         run: python agent.py
 
       - name: Refresh site index

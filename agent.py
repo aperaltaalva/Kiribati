@@ -15,7 +15,7 @@ from pydantic import BaseModel, Field
 
 DEFAULT_SOURCE_URL = "https://aperaltaalva.github.io/Kiribati"
 DEFAULT_OUTPUT_PATH = Path("site") / "followups.html"
-DEFAULT_FOLLOWUPS_MODEL = "gpt-5.5"
+DEFAULT_FOLLOWUPS_MODEL = "gpt-5.4"
 
 
 @dataclass(frozen=True)
