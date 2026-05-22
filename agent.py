@@ -1,7 +1,4 @@
 import os
-import smtplib
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
 import requests
 from bs4 import BeautifulSoup
 from openai import OpenAI
@@ -31,13 +28,12 @@ def fetch_follow_up_tasks():
         print("Could not find the follow-up section on the page.")
         return None
         
-    # Gather all list items or paragraphs until the next major section (Section I)
+    # Gather all list items or paragraphs until the next major section
     tasks = []
     current_element = target_header.find_next()
     while current_element and current_element.name not in ['h1', 'h2', 'h3']:
         if current_element.name == 'ul':
             for li in current_element.find_all('li'):
-                # Clean up nested links/formatting but keep text
                 tasks.append(li.get_text().strip())
         elif current_element.name == 'p':
             tasks.append(current_element.get_text().strip())
@@ -45,8 +41,8 @@ def fetch_follow_up_tasks():
         
     return "\n".join([f"- {t}" for t in tasks if t])
 
-# 2. Let the Agent process and "follow up" on these tasks
-def process_tasks_with_agent(tasks_text):
+# 2. Ask OpenAI to build a beautiful HTML dashboard with the follow-up results
+def generate_html_page(tasks_text):
     api_key = os.getenv("OPENAI_API_KEY")
     if not api_key:
         print("Missing OpenAI API Key.")
@@ -62,19 +58,25 @@ def process_tasks_with_agent(tasks_text):
     {tasks_text}
     ---
     
-    Your job is to "follow up" on these items by:
-    1. Organizing them by country/sector (Fiji, Tuvalu, Vanuatu, etc.).
-    2. Explaining why each item matters and the critical risks/opportunities to monitor.
-    3. Drafting a concrete, immediate action plan for each (e.g., specific search queries to run, official agencies to check, or emails to draft).
+    Build a self-contained, highly professional HTML webpage that organizes and "follows up" on these items.
     
-    Format your response as a polished, highly professional markdown briefing.
+    Design Guidelines:
+    - Use Tailwind CSS via the CDN link: <script src="https://cdn.tailwindcss.com"></script>
+    - Ensure it is a modern, responsive card-based layout.
+    - Provide a header: "Kiribati Monitor: Daily Follow-up Dashboard"
+    - Organize the tasks clearly by country or topic (e.g., Fiji, Tuvalu, Vanuatu, Regional Climate Financing, Geopolitics).
+    - For each item, display:
+      1. The original task/headline.
+      2. A "Why it matters" analytical brief.
+      3. "Actionable Next Steps" (concrete search strategies, specific agency resources to watch, or drafts of tracking items).
+    - Return ONLY the raw HTML code, starting with <!DOCTYPE html> and ending with </html>. Do not wrap the code in markdown formatting like ```html.
     """
     
     try:
         response = client.chat.completions.create(
             model="gpt-4o",
             messages=[
-                {"role": "system", "content": "You are a professional policy researcher and task tracking assistant."},
+                {"role": "system", "content": "You are a web designer and policy researcher. You output ONLY valid, beautifully formatted, self-contained HTML code using Tailwind CSS."},
                 {"role": "user", "content": prompt}
             ]
         )
@@ -83,46 +85,20 @@ def process_tasks_with_agent(tasks_text):
         print(f"Error invoking LLM: {e}")
         return None
 
-# 3. Email the results to you
-def send_email(report_content):
-    sender = os.getenv("SENDER_EMAIL")
-    password = os.getenv("SENDER_PASSWORD") # Remember to use an App Password if using Gmail
-    receiver = os.getenv("RECEIVER_EMAIL")
-    
-    if not all([sender, password, receiver]):
-        print("Email configuration environment variables are missing.")
-        return
-
-    msg = MIMEMultipart()
-    msg['From'] = sender
-    msg['To'] = receiver
-    msg['Subject'] = "Daily Kiribati Monitor Follow-up Report"
-    
-    msg.attach(MIMEText(report_content, 'plain'))
-    
-    try:
-        server = smtplib.SMTP('smtp.gmail.com', 587)
-        server.starttls()
-        server.login(sender, password)
-        server.sendmail(sender, receiver, msg.as_string())
-        server.quit()
-        print("Email report dispatched successfully.")
-    except Exception as e:
-        print(f"Failed to send email: {e}")
-
 if __name__ == "__main__":
     print("Extracting follow-ups from Kiribati Macro Monitor...")
     raw_tasks = fetch_follow_up_tasks()
     
     if raw_tasks:
-        print(f"Tasks extracted:\n{raw_tasks}\n")
-        print("Running follow-up analysis...")
-        analysis = process_tasks_with_agent(raw_tasks)
+        print("Generating follow-up HTML webpage...")
+        html_content = generate_html_page(raw_tasks)
         
-        if analysis:
-            print("Mailing the analysis...")
-            send_email(analysis)
+        if html_content:
+            # Save the file as followups.html
+            with open("followups.html", "w", encoding="utf-8") as f:
+                f.write(html_content)
+            print("Successfully created 'followups.html'.")
         else:
-            print("Failed to generate analysis.")
+            print("Failed to generate HTML.")
     else:
         print("No tasks found or failed to parse.")
