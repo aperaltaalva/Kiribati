@@ -94,11 +94,16 @@ if __name__ == "__main__":
         html_content = generate_html_page(raw_tasks)
         
         if html_content:
-            # Save the file as followups.html
-            with open("followups.html", "w", encoding="utf-8") as f:
+            # Ensure the "site" directory exists
+            os.makedirs("site", exist_ok=True)
+            
+            # Save directly inside the site folder
+            with open("site/followups.html", "w", encoding="utf-8") as f:
                 f.write(html_content)
-            print("Successfully created 'followups.html'.")
+            print("Successfully created 'site/followups.html'.")
         else:
             print("Failed to generate HTML.")
+    else:
+        print("No tasks found or failed to parse.")
     else:
         print("No tasks found or failed to parse.")
