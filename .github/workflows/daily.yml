@@ -46,6 +46,15 @@ jobs:
       - name: Run daily monitor and build site
         run: python -m kiribati_monitor.run_daily --since-hours 24 --fresh-hours 24 --no-email --publish-site
 
+      - name: Run follow-up dashboard agent
+        env:
+          FOLLOWUPS_SOURCE_PATH: site/index.html
+          FOLLOWUPS_OUTPUT_PATH: site/followups.html
+        run: python agent.py
+
+      - name: Refresh site index
+        run: python -c "from kiribati_monitor.static_site import publish_static_site; publish_static_site(output_dir='output', site_dir='site')"
+
       - name: List generated output
         if: always()
         run: |

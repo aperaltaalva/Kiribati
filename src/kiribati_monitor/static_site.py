@@ -31,8 +31,12 @@ def publish_static_site(
         latest_path = site_path / brief_pages[0][1]
         latest_html = extract_body(latest_path.read_text(encoding="utf-8"))
 
+    followups_page = site_path / "followups.html"
     index_path = site_path / "index.html"
-    index_path.write_text(render_index(brief_pages, latest_html=latest_html), encoding="utf-8")
+    index_path.write_text(
+        render_index(brief_pages, latest_html=latest_html, has_followups=followups_page.exists()),
+        encoding="utf-8",
+    )
     LOGGER.info("Static site generated: index=%s pages=%s", index_path, len(brief_pages))
     return index_path
 
@@ -47,7 +51,7 @@ def extract_body(html_text: str) -> str:
     return match.group(1) if match else html_text
 
 
-def render_index(brief_pages: list[tuple[str, str]], *, latest_html: str = "") -> str:
+def render_index(brief_pages: list[tuple[str, str]], *, latest_html: str = "", has_followups: bool = False) -> str:
     generated_at = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
     if brief_pages:
         links = "\n".join(
@@ -64,6 +68,13 @@ def render_index(brief_pages: list[tuple[str, str]], *, latest_html: str = "") -
     </ul>
   </details>
 """
+    followups_link = (
+        """
+  <p><a href="followups.html">Daily follow-up dashboard</a></p>
+"""
+        if has_followups
+        else ""
+    )
     latest_section = latest_html or "<p>No daily brief pages have been generated yet.</p>"
     return f"""<!doctype html>
 <html lang="en">
@@ -89,6 +100,7 @@ def render_index(brief_pages: list[tuple[str, str]], *, latest_html: str = "") -
   <div class="warning">
     <strong>Public-source-only:</strong> Do not publish confidential, internal, mission-sensitive, or non-public material here unless access controls are approved by your organization.
   </div>
+  {followups_link}
   {latest_section}
   {archive}
 </body>

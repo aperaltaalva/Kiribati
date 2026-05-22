@@ -1,40 +1,62 @@
-name: Daily Follow-up Agent
+name: Manual Follow-up Dashboard
 
 on:
-  schedule:
-    - cron: '0 16 * * *'
   workflow_dispatch:
 
-# Grant write permissions to commit the generated webpage back to the repository
-permissions:
-  contents: write
-
 jobs:
-  run-agent:
+  followups:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    env:
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      MODEL: ${{ secrets.MODEL || 'gpt-5.4-mini' }}
+      DB_PATH: data/kiribati_monitor.sqlite
+      OUTPUT_DIR: output
+      LOG_LEVEL: INFO
+      HTTP_MAX_ATTEMPTS: 3
+      HTTP_BACKOFF_SECONDS: 1.0
+      REQUIRE_EMAIL: "false"
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+      SITE_DIR: site
 
     steps:
-    - name: Checkout Repository
-      uses: actions/checkout@v4
+      - name: Check out repository
+        uses: actions/checkout@v4
 
-    - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.10'
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
 
-    - name: Install Libraries
-      run: |
-        python -m pip install --upgrade pip
-        pip install -r requirements.txt
+      - name: Install dependencies
+        run: python -m pip install -e ".[dev]"
 
-    - name: Run Follow-up Agent
-      env:
-        OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-      run: python agent.py
+      - name: Run daily monitor and build site
+        run: python -m kiribati_monitor.run_daily --since-hours 24 --fresh-hours 24 --no-email --publish-site
 
-    - name: Commit and Push Webpage
-      run: |
-        git config --global user.name "github-actions[bot]"
-        git add followups.html
-        git commit -m "Auto-update follow-up dashboard" || echo "No changes to commit"
-        git push
+      - name: Run follow-up dashboard agent
+        env:
+          FOLLOWUPS_SOURCE_PATH: site/index.html
+          FOLLOWUPS_OUTPUT_PATH: site/followups.html
+        run: python agent.py
+
+      - name: Refresh site index
+        run: python -c "from kiribati_monitor.static_site import publish_static_site; publish_static_site(output_dir='output', site_dir='site')"
+
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload GitHub Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site/
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
